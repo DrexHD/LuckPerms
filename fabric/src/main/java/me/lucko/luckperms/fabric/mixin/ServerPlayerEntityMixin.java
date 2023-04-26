@@ -25,6 +25,7 @@
 
 package me.lucko.luckperms.fabric.mixin;
 
+import com.mojang.authlib.GameProfile;
 import me.lucko.luckperms.common.cacheddata.type.MetaCache;
 import me.lucko.luckperms.common.cacheddata.type.PermissionCache;
 import me.lucko.luckperms.common.context.manager.QueryOptionsCache;
@@ -36,9 +37,12 @@ import me.lucko.luckperms.fabric.event.PlayerChangeWorldCallback;
 import me.lucko.luckperms.fabric.model.MixinUser;
 import net.luckperms.api.query.QueryOptions;
 import net.luckperms.api.util.Tristate;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientSettingsC2SPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -54,7 +58,13 @@ import java.util.Locale;
  * until a similar event is added to Fabric itself.</p>
  */
 @Mixin(ServerPlayerEntity.class)
-public abstract class ServerPlayerEntityMixin implements MixinUser {
+public abstract class ServerPlayerEntityMixin extends PlayerEntity implements MixinUser {
+
+    @Shadow public abstract ServerWorld method_51469();
+
+    public ServerPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
+        super(world, pos, yaw, gameProfile);
+    }
 
     /** Cache a reference to the LP {@link User} instance loaded for this player */
     private User luckperms$user;
@@ -64,12 +74,9 @@ public abstract class ServerPlayerEntityMixin implements MixinUser {
      * having to maintain a map of Player->Cache.
      */
     private QueryOptionsCache<ServerPlayerEntity> luckperms$queryOptions;
-
     // Cache player locale
-    private Locale luckperms$locale;
 
-    // Used by PlayerChangeWorldCallback hook below.
-    @Shadow public abstract ServerWorld getWorld();
+    private Locale luckperms$locale;
 
     @Override
     public User getLuckPermsUser() {
@@ -183,6 +190,6 @@ public abstract class ServerPlayerEntityMixin implements MixinUser {
 
     @Inject(at = @At("TAIL"), method = "worldChanged")
     private void luckperms_onChangeDimension(ServerWorld targetWorld, CallbackInfo ci) {
-        PlayerChangeWorldCallback.EVENT.invoker().onChangeWorld(this.getWorld(), targetWorld, (ServerPlayerEntity) (Object) this);
+        PlayerChangeWorldCallback.EVENT.invoker().onChangeWorld(this.method_51469(), targetWorld, (ServerPlayerEntity) (Object) this);
     }
 }
