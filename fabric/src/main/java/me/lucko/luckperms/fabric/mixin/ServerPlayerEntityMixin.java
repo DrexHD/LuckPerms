@@ -60,7 +60,8 @@ import java.util.Locale;
 @Mixin(ServerPlayerEntity.class)
 public abstract class ServerPlayerEntityMixin extends PlayerEntity implements MixinUser {
 
-    @Shadow public abstract ServerWorld method_51469();
+    @Shadow
+    public abstract ServerWorld getServerWorld();
 
     public ServerPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
         super(world, pos, yaw, gameProfile);
@@ -190,6 +191,6 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity implements Mi
 
     @Inject(at = @At("TAIL"), method = "worldChanged")
     private void luckperms_onChangeDimension(ServerWorld targetWorld, CallbackInfo ci) {
-        PlayerChangeWorldCallback.EVENT.invoker().onChangeWorld(this.method_51469(), targetWorld, (ServerPlayerEntity) (Object) this);
+        PlayerChangeWorldCallback.EVENT.invoker().onChangeWorld(this.getServerWorld(), targetWorld, (ServerPlayerEntity) (Object) this);
     }
 }
