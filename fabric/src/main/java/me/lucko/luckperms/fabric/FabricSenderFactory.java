@@ -118,6 +118,6 @@ public class FabricSenderFactory extends SenderFactory<LPFabricPlugin, ServerCom
     }
 
     public static Text toNativeText(Component component) {
-        return Text.Serializer.fromJson(GsonComponentSerializer.gson().serialize(component));
+        return Text.Serialization.fromJson(GsonComponentSerializer.gson().serialize(component));
     }
 }
