@@ -38,6 +38,7 @@ import me.lucko.luckperms.common.query.QueryOptionsImpl;
 import me.lucko.luckperms.common.verbose.VerboseCheckTarget;
 import me.lucko.luckperms.common.verbose.event.CheckOrigin;
 import me.lucko.luckperms.fabric.LPFabricPlugin;
+import me.lucko.luckperms.fabric.model.IServerCommandSource;
 import me.lucko.luckperms.fabric.model.MixinUser;
 import net.fabricmc.fabric.api.util.TriState;
 import net.luckperms.api.util.Tristate;
@@ -69,8 +70,8 @@ public class FabricPermissionsApiListener {
     }
 
     private @NonNull TriState onPermissionCheck(CommandSource source, String permission) {
-        if (source instanceof ServerCommandSource) {
-            Entity entity = ((ServerCommandSource) source).getEntity();
+        if (source instanceof IServerCommandSource) {
+            Entity entity = ((IServerCommandSource) source).luckperms$getOriginalEntity();
             if (entity instanceof ServerPlayerEntity) {
                 return playerPermissionCheck((ServerPlayerEntity) entity, permission);
             }
@@ -79,8 +80,8 @@ public class FabricPermissionsApiListener {
     }
 
     private @NonNull Optional<String> onOptionRequest(CommandSource source, String key) {
-        if (source instanceof ServerCommandSource) {
-            Entity entity = ((ServerCommandSource) source).getEntity();
+        if (source instanceof IServerCommandSource) {
+            Entity entity = ((IServerCommandSource) source).luckperms$getOriginalEntity();
             if (entity instanceof ServerPlayerEntity) {
                 return playerGetOption((ServerPlayerEntity) entity, key);
             }

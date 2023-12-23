@@ -31,9 +31,12 @@ import me.lucko.luckperms.common.context.manager.QueryOptionsCache;
 import me.lucko.luckperms.common.model.User;
 import me.lucko.luckperms.common.verbose.event.CheckOrigin;
 import me.lucko.luckperms.fabric.context.FabricContextManager;
+import me.lucko.luckperms.fabric.model.IServerCommandSource;
 import me.lucko.luckperms.fabric.model.MixinUser;
 import net.luckperms.api.query.QueryOptions;
 import net.luckperms.api.util.Tristate;
+import net.minecraft.entity.Entity;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import org.spongepowered.asm.mixin.Mixin;
@@ -42,6 +45,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Mixin into {@link ServerPlayerEntity} to store LP caches and implement {@link MixinUser}.
@@ -159,5 +163,10 @@ public abstract class ServerPlayerEntityMixin implements MixinUser {
     private void luckperms$copyFrom(ServerPlayerEntity oldPlayer, boolean alive, CallbackInfo ci) {
         MixinUser oldMixin = (MixinUser) oldPlayer;
         luckperms$initializePermissions(oldMixin.luckperms$getUser());
+    }
+
+    @Inject(method = "getCommandSource", at = @At("TAIL"))
+    private void setOriginalCommandSourceEntity(CallbackInfoReturnable<ServerCommandSource> cir) {
+        ((IServerCommandSource) cir.getReturnValue()).luckperms$setOriginalEntity((Entity) (Object) this);
     }
 }
