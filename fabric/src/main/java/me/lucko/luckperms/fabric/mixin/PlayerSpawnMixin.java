@@ -25,32 +25,29 @@
 
 package me.lucko.luckperms.fabric.mixin;
 
-import com.mojang.authlib.GameProfile;
-import me.lucko.luckperms.fabric.event.ServerConfigurationTickCallback;
+import com.llamalad7.mixinextras.sugar.Local;
+import me.lucko.luckperms.fabric.event.PreOnPlayerConnectCallback;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ConnectedClientData;
-import net.minecraft.server.network.ServerCommonNetworkHandler;
-import net.minecraft.server.network.ServerConfigurationNetworkHandler;
-import org.spongepowered.asm.mixin.Final;
+import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(ServerConfigurationNetworkHandler.class)
-public abstract class ServerConfigurationNetworkHandlerMixin extends ServerCommonNetworkHandler {
-    @Shadow
-    @Final
-    private GameProfile profile;
-
-    public ServerConfigurationNetworkHandlerMixin(MinecraftServer server, ClientConnection connection, ConnectedClientData clientData) {
-        super(server, connection, clientData);
-    }
-
-    @Inject(method = "tick", at = @At("TAIL"))
-    private void onTick(CallbackInfo ci) {
-        ServerConfigurationTickCallback.EVENT.invoker().onServerConfigurationTick(this.profile, (ServerConfigurationNetworkHandler) (Object) this, this.server);
+@Mixin(targets = "net.minecraft.server.network.PrepareSpawnTask$PlayerSpawn")
+public abstract class PlayerSpawnMixin {
+    @Inject(
+        method = "onReady",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/server/PlayerManager;onPlayerConnect(Lnet/minecraft/network/ClientConnection;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/server/network/ConnectedClientData;)V"
+        ),
+        cancellable = true
+    )
+    private void beforeConnection(ClientConnection connection, ConnectedClientData clientData, CallbackInfoReturnable<ServerPlayerEntity> cir, @Local ServerPlayerEntity player) {
+        if (!PreOnPlayerConnectCallback.EVENT.invoker().onPreOnPlayerConnect(player, connection, player.getEntityWorld().getServer())) {
+            cir.setReturnValue(player);
+        }
     }
 }

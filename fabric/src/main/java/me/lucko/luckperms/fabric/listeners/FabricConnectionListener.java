@@ -42,6 +42,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerLoginConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerLoginNetworking.LoginSynchronizer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.kyori.adventure.text.Component;
+import net.minecraft.network.ClientConnection;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.*;
 
@@ -68,8 +69,8 @@ public class FabricConnectionListener extends AbstractConnectionListener {
 
         // Get their profile from the net handler - it should have been initialised by now.
         GameProfile profile = ((ServerLoginNetworkHandlerAccessor) netHandler).getGameProfile();
-        UUID uniqueId = profile.getId();
-        String username = profile.getName();
+        UUID uniqueId = profile.id();
+        String username = profile.name();
 
         if (this.plugin.getConfiguration().get(ConfigKeys.DEBUG_LOGINS)) {
             this.plugin.getLogger().info("Processing pre-login (sync phase) for " + uniqueId + " - " + username);
@@ -107,17 +108,17 @@ public class FabricConnectionListener extends AbstractConnectionListener {
         }
     }
 
-    private boolean onLogin(ServerPlayerEntity player, ServerCommonNetworkHandler netHandler, MinecraftServer server) {
+    private boolean onLogin(ServerPlayerEntity player, ClientConnection netHandler, MinecraftServer server) {
         if (this.plugin.getConfiguration().get(ConfigKeys.DEBUG_LOGINS)) {
-            this.plugin.getLogger().info("Processing login for " + player.getUuid() + " - " + player.getGameProfile().getName());
+            this.plugin.getLogger().info("Processing login for " + player.getUuid() + " - " + player.getGameProfile().name());
         }
 
         final User user = this.plugin.getUserManager().getIfLoaded(player.getUuid());
 
         /* User instance is null for whatever reason. Could be that it was unloaded between asyncpre and now. */
         if (user == null) {
-            this.plugin.getLogger().warn("User " + player.getUuid() + " - " + player.getGameProfile().getName() +
-                " doesn't currently have data pre-loaded - denying login.");
+            this.plugin.getLogger().warn("User " + player.getUuid() + " - " + player.getGameProfile().id() +
+                    " doesn't currently have data pre-loaded - denying login.");
             Component reason = TranslationManager.render(Message.LOADING_STATE_ERROR.build());
             netHandler.disconnect(FabricSenderFactory.toNativeText(reason));
             return false;
@@ -135,11 +136,13 @@ public class FabricConnectionListener extends AbstractConnectionListener {
            This should fix cases of players disconnecting whey they download big resource pack
            on a slow connection or some other mod delays it for any reason it needs to.
          */
-        this.plugin.getUserManager().getHouseKeeper().registerUsage(gameProfile.getId());
+        this.plugin.getUserManager().getHouseKeeper().registerUsage(gameProfile.id());
     }
 
     private void onDisconnect(ServerPlayNetworkHandler netHandler, MinecraftServer server) {
-        handleDisconnect(netHandler.player.getUuid());
+        if (!server.isStopped()) {
+            handleDisconnect(netHandler.player.getUuid());
+        }
     }
 
 }
