@@ -23,23 +23,21 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.neoforge;
+package me.lucko.luckperms.fabric.event;
 
-import me.lucko.luckperms.common.plugin.scheduler.AbstractJavaScheduler;
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.PermissionSet;
 
-import java.util.concurrent.Executor;
+public interface SetupPlayerPermissionsEvent {
+    Event<SetupPlayerPermissionsEvent> EVENT = EventFactory.createArrayBacked(SetupPlayerPermissionsEvent.class, listeners -> (entity, defaults) -> {
+        PermissionSet set = defaults;
+        for (SetupPlayerPermissionsEvent listener : listeners) {
+            set = listener.onSetupPlayerPermissions(entity, set);
+        }
+        return set;
+    });
 
-public class NeoForgeSchedulerAdapter extends AbstractJavaScheduler {
-    private final Executor sync;
-
-    public NeoForgeSchedulerAdapter(LPNeoForgeBootstrap bootstrap) {
-        super(bootstrap);
-        this.sync = r -> bootstrap.getServer().orElseThrow(() -> new IllegalStateException("Server not ready")).executeBlocking(r);
-    }
-
-    @Override
-    public Executor sync() {
-        return this.sync;
-    }
-
+    PermissionSet onSetupPlayerPermissions(ServerPlayer entity, PermissionSet defaults);
 }

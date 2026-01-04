@@ -23,19 +23,20 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge.util;
+package me.lucko.luckperms.common.minecraft.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import me.lucko.luckperms.common.graph.Graph;
 import me.lucko.luckperms.common.graph.TraversalAlgorithm;
+import me.lucko.luckperms.common.minecraft.MinecraftLuckPermsPlugin;
 import me.lucko.luckperms.common.model.User;
-import me.lucko.luckperms.forge.LPForgePlugin;
 import net.luckperms.api.query.QueryOptions;
 import net.luckperms.api.util.Tristate;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.LevelBasedPermissionSet;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -68,7 +69,7 @@ public final class BrigadierInjector {
      * @param plugin the plugin
      * @param dispatcher the command dispatcher
      */
-    public static void inject(LPForgePlugin plugin, CommandDispatcher<CommandSourceStack> dispatcher) {
+    public static void inject(MinecraftLuckPermsPlugin<?, ?> plugin, CommandDispatcher<CommandSourceStack> dispatcher) {
         Iterable<CommandNodeWithParent> tree = CommandNodeGraph.INSTANCE.traverse(
                 TraversalAlgorithm.DEPTH_FIRST_PRE_ORDER,
                 new CommandNodeWithParent(null, dispatcher.getRoot())
@@ -103,7 +104,7 @@ public final class BrigadierInjector {
 
         while (node != null) {
             if (node.node instanceof LiteralCommandNode) {
-                if (builder.length() != 0) {
+                if (!builder.isEmpty()) {
                     builder.insert(0, '.');
                 }
 
@@ -114,7 +115,7 @@ public final class BrigadierInjector {
             node = node.parent;
         }
 
-        if (builder.length() == 0) {
+        if (builder.isEmpty()) {
             return null;
         }
 
@@ -127,11 +128,11 @@ public final class BrigadierInjector {
      * delegating to the existing requirement.
      */
     private static final class InjectedPermissionRequirement implements Predicate<CommandSourceStack> {
-        private final LPForgePlugin plugin;
+        private final MinecraftLuckPermsPlugin<?, ?> plugin;
         private final String permission;
         private final Predicate<CommandSourceStack> delegate;
 
-        private InjectedPermissionRequirement(LPForgePlugin plugin, String permission, Predicate<CommandSourceStack> delegate) {
+        private InjectedPermissionRequirement(MinecraftLuckPermsPlugin<?, ?> plugin, String permission, Predicate<CommandSourceStack> delegate) {
             this.plugin = plugin;
             this.permission = permission;
             this.delegate = delegate;
@@ -140,6 +141,7 @@ public final class BrigadierInjector {
         @Override
         public boolean test(CommandSourceStack source) {
             if (source.getEntity() instanceof ServerPlayer player) {
+
                 User user = this.plugin.getUserManager().getIfLoaded(player.getUUID());
                 if (user == null) {
                     return false;
@@ -149,7 +151,7 @@ public final class BrigadierInjector {
                 Tristate state = user.getCachedData().getPermissionData(queryOptions).checkPermission(this.permission);
 
                 if (state != Tristate.UNDEFINED) {
-                    return state.asBoolean() && this.delegate.test(source.withPermission(4));
+                    return state.asBoolean() && this.delegate.test(source.withPermission(LevelBasedPermissionSet.OWNER));
                 }
             }
 

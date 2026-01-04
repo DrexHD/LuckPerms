@@ -27,26 +27,26 @@ package me.lucko.luckperms.fabric.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import me.lucko.luckperms.fabric.event.PreOnPlayerConnectCallback;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.server.network.ConnectedClientData;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.network.Connection;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(targets = "net.minecraft.server.network.PrepareSpawnTask$PlayerSpawn")
-public abstract class PlayerSpawnMixin {
+@Mixin(targets = "net.minecraft.server.network.config.PrepareSpawnTask$Ready")
+public abstract class PrepareSpawnTaskMixin {
     @Inject(
-        method = "onReady",
+        method = "spawn",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/server/PlayerManager;onPlayerConnect(Lnet/minecraft/network/ClientConnection;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/server/network/ConnectedClientData;)V"
+            target = "Lnet/minecraft/server/players/PlayerList;placeNewPlayer(Lnet/minecraft/network/Connection;Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/server/network/CommonListenerCookie;)V"
         ),
         cancellable = true
     )
-    private void beforeConnection(ClientConnection connection, ConnectedClientData clientData, CallbackInfoReturnable<ServerPlayerEntity> cir, @Local ServerPlayerEntity player) {
-        if (!PreOnPlayerConnectCallback.EVENT.invoker().onPreOnPlayerConnect(player, connection, player.getEntityWorld().getServer())) {
+    private void beforeConnection(Connection connection, CommonListenerCookie clientData, CallbackInfoReturnable<ServerPlayer> cir, @Local ServerPlayer player) {
+        if (!PreOnPlayerConnectCallback.EVENT.invoker().onPreOnPlayerConnect(player, connection, player.level().getServer())) {
             cir.setReturnValue(player);
         }
     }

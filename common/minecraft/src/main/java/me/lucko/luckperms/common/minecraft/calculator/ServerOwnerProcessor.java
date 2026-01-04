@@ -23,7 +23,7 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge.calculator;
+package me.lucko.luckperms.common.minecraft.calculator;
 
 import me.lucko.luckperms.common.cacheddata.result.TristateResult;
 import me.lucko.luckperms.common.calculator.processor.AbstractPermissionProcessor;
@@ -31,8 +31,7 @@ import me.lucko.luckperms.common.calculator.processor.PermissionProcessor;
 import net.luckperms.api.util.Tristate;
 
 /**
- * Permission processor which is added to the owner of an Integrated server to
- * simply return true if no other processors match.
+ * Permission processor which is added to the owner of an integrated server to simply return true if no other processors match.
  */
 public class ServerOwnerProcessor extends AbstractPermissionProcessor implements PermissionProcessor {
     private static final TristateResult TRUE_RESULT = new TristateResult.Factory(ServerOwnerProcessor.class).result(Tristate.TRUE);
@@ -47,5 +46,4 @@ public class ServerOwnerProcessor extends AbstractPermissionProcessor implements
     public TristateResult hasPermission(String permission) {
         return TRUE_RESULT;
     }
-
 }

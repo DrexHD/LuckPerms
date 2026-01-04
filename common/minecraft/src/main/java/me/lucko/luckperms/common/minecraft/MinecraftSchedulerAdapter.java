@@ -23,21 +23,22 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.fabric.mixin;
+package me.lucko.luckperms.common.minecraft;
 
-import com.mojang.authlib.GameProfile;
-import net.minecraft.server.network.ServerLoginNetworkHandler;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Accessor;
+import me.lucko.luckperms.common.plugin.scheduler.AbstractJavaScheduler;
 
-/**
- * Accessor mixin to provide access to the underlying {@link GameProfile} during the server
- * login handling.
- */
-@Mixin(ServerLoginNetworkHandler.class)
-public interface ServerLoginNetworkHandlerAccessor {
+import java.util.concurrent.Executor;
 
-    @Accessor("profile")
-    GameProfile getGameProfile();
+public class MinecraftSchedulerAdapter extends AbstractJavaScheduler {
+    private final Executor sync;
 
+    public MinecraftSchedulerAdapter(MinecraftLuckPermsBootstrap bootstrap) {
+        super(bootstrap);
+        this.sync = r -> bootstrap.getServer().orElseThrow(() -> new IllegalStateException("Server not ready")).executeBlocking(r);
+    }
+
+    @Override
+    public Executor sync() {
+        return this.sync;
+    }
 }

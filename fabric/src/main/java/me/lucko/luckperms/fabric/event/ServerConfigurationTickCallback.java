@@ -29,7 +29,7 @@ import com.mojang.authlib.GameProfile;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerConfigurationNetworkHandler;
+import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
 
 public interface ServerConfigurationTickCallback {
     Event<ServerConfigurationTickCallback> EVENT = EventFactory.createArrayBacked(ServerConfigurationTickCallback.class, listeners -> (player, handler, server) -> {
@@ -38,5 +38,5 @@ public interface ServerConfigurationTickCallback {
         }
     });
 
-    void onServerConfigurationTick(GameProfile player, ServerConfigurationNetworkHandler netHandler, MinecraftServer server);
+    void onServerConfigurationTick(GameProfile player, ServerConfigurationPacketListenerImpl netHandler, MinecraftServer server);
 }

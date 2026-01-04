@@ -23,28 +23,20 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.fabric.calculator;
+package me.lucko.luckperms.fabric.mixin;
 
-import me.lucko.luckperms.common.cacheddata.result.TristateResult;
-import me.lucko.luckperms.common.calculator.processor.AbstractPermissionProcessor;
-import me.lucko.luckperms.common.calculator.processor.PermissionProcessor;
-import net.luckperms.api.util.Tristate;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
- * Permission processor which is added to the owner of an Integrated server to
- * simply return true if no other processors match.
+ * Accessor mixin to provide access to the underlying {@link CommandSource}
  */
-public class ServerOwnerProcessor extends AbstractPermissionProcessor implements PermissionProcessor {
-    private static final TristateResult TRUE_RESULT = new TristateResult.Factory(ServerOwnerProcessor.class).result(Tristate.TRUE);
+@Mixin(CommandSourceStack.class)
+public interface CommandSourceStackAccessor {
 
-    public static final ServerOwnerProcessor INSTANCE = new ServerOwnerProcessor();
+    @Accessor("source")
+    CommandSource getSource();
 
-    private ServerOwnerProcessor() {
-
-    }
-
-    @Override
-    public TristateResult hasPermission(String permission) {
-        return TRUE_RESULT;
-    }
 }

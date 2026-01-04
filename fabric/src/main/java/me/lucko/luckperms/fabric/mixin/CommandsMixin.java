@@ -25,32 +25,21 @@
 
 package me.lucko.luckperms.fabric.mixin;
 
-import com.mojang.authlib.GameProfile;
-import me.lucko.luckperms.fabric.event.ServerConfigurationTickCallback;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
-import net.minecraft.server.network.ServerCommonNetworkHandler;
-import net.minecraft.server.network.ServerConfigurationNetworkHandler;
-import org.spongepowered.asm.mixin.Final;
+import com.mojang.brigadier.ParseResults;
+import me.lucko.luckperms.fabric.event.PreExecuteCommandCallback;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(ServerConfigurationNetworkHandler.class)
-public abstract class ServerConfigurationNetworkHandlerMixin extends ServerCommonNetworkHandler {
-    @Shadow
-    @Final
-    private GameProfile profile;
-
-    public ServerConfigurationNetworkHandlerMixin(MinecraftServer server, ClientConnection connection, ConnectedClientData clientData) {
-        super(server, connection, clientData);
-    }
-
-    @Inject(method = "tick", at = @At("TAIL"))
-    private void onTick(CallbackInfo ci) {
-        ServerConfigurationTickCallback.EVENT.invoker().onServerConfigurationTick(this.profile, (ServerConfigurationNetworkHandler) (Object) this, this.server);
+@Mixin(Commands.class)
+public class CommandsMixin {
+    @Inject(at = @At("HEAD"), method = "performCommand", cancellable = true)
+    private void commandExecuteCallback(ParseResults<CommandSourceStack> parseResults, String command, CallbackInfo ci) {
+        if (!PreExecuteCommandCallback.EVENT.invoker().onPreExecuteCommand(parseResults.getContext().getSource(), command)) {
+            ci.cancel();
+        }
     }
 }

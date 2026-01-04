@@ -25,21 +25,32 @@
 
 package me.lucko.luckperms.fabric.mixin;
 
-import com.mojang.brigadier.ParseResults;
-import me.lucko.luckperms.fabric.event.PreExecuteCommandCallback;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
+import com.mojang.authlib.GameProfile;
+import me.lucko.luckperms.fabric.event.ServerConfigurationTickCallback;
+import net.minecraft.network.Connection;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.server.network.ServerCommonPacketListenerImpl;
+import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(CommandManager.class)
-public class CommandManagerMixin {
-    @Inject(at = @At("HEAD"), method = "execute", cancellable = true)
-    private void commandExecuteCallback(ParseResults<ServerCommandSource> parseResults, String command, CallbackInfo ci) {
-        if (!PreExecuteCommandCallback.EVENT.invoker().onPreExecuteCommand(parseResults.getContext().getSource(), command)) {
-            ci.cancel();
-        }
+@Mixin(ServerConfigurationPacketListenerImpl.class)
+public abstract class ServerConfigurationPacketListenerImplMixin extends ServerCommonPacketListenerImpl {
+    @Shadow
+    @Final
+    private GameProfile gameProfile;
+
+    public ServerConfigurationPacketListenerImplMixin(MinecraftServer minecraftServer, Connection connection, CommonListenerCookie commonListenerCookie) {
+        super(minecraftServer, connection, commonListenerCookie);
+    }
+
+    @Inject(method = "tick", at = @At("TAIL"))
+    private void onTick(CallbackInfo ci) {
+        ServerConfigurationTickCallback.EVENT.invoker().onServerConfigurationTick(this.gameProfile, (ServerConfigurationPacketListenerImpl) (Object) this, this.server);
     }
 }

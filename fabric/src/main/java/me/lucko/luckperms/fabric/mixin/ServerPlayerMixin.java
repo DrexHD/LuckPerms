@@ -31,24 +31,24 @@ import me.lucko.luckperms.common.context.manager.QueryOptionsSupplier;
 import me.lucko.luckperms.common.model.User;
 import me.lucko.luckperms.common.verbose.event.CheckOrigin;
 import me.lucko.luckperms.fabric.context.FabricContextManager;
+import me.lucko.luckperms.fabric.event.SetupPlayerPermissionsEvent;
 import me.lucko.luckperms.fabric.model.MixinUser;
 import net.luckperms.api.query.QueryOptions;
 import net.luckperms.api.util.Tristate;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.PermissionSet;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Mixin into {@link ServerPlayerEntity} to store LP caches and implement {@link MixinUser}.
- *
- * <p>This mixin is also temporarily used to implement our internal PlayerChangeWorldCallback,
- * until a similar event is added to Fabric itself.</p>
+ * Mixin into {@link ServerPlayer} to store LP caches and implement {@link MixinUser}.
  */
-@Mixin(ServerPlayerEntity.class)
-public abstract class ServerPlayerEntityMixin implements MixinUser {
+@Mixin(ServerPlayer.class)
+public abstract class ServerPlayerMixin implements MixinUser {
 
     /** Cache a reference to the LP {@link User} instance loaded for this player */
     @Unique
@@ -69,7 +69,7 @@ public abstract class ServerPlayerEntityMixin implements MixinUser {
     @Override
     public QueryOptionsSupplier luckperms$getQueryOptionsCache(FabricContextManager contextManager) {
         if (this.luckperms$queryOptions == null) {
-            this.luckperms$queryOptions = contextManager.createQueryOptionsSupplier((ServerPlayerEntity) (Object) this);
+            this.luckperms$queryOptions = contextManager.createQueryOptionsSupplier((ServerPlayer) (Object) this);
         }
         return this.luckperms$queryOptions;
     }
@@ -150,9 +150,20 @@ public abstract class ServerPlayerEntityMixin implements MixinUser {
         return cache.getMetaOrChatMetaValue(key, CheckOrigin.PLATFORM_API);
     }
 
-    @Inject(at = @At("TAIL"), method = "copyFrom")
-    private void luckperms$copyFrom(ServerPlayerEntity oldPlayer, boolean alive, CallbackInfo ci) {
+    @Inject(at = @At("TAIL"), method = "restoreFrom")
+    private void luckperms$restoreFrom(ServerPlayer oldPlayer, boolean alive, CallbackInfo ci) {
         MixinUser oldMixin = (MixinUser) oldPlayer;
         luckperms$initializePermissions(oldMixin.luckperms$getUser());
+    }
+
+    @Inject(at = @At("RETURN"), method = "permissions", cancellable = true)
+    private void luckperms$permissions(CallbackInfoReturnable<PermissionSet> cir) {
+        ServerPlayer entity = (ServerPlayer) (Object) this;
+        PermissionSet set = cir.getReturnValue();
+
+        PermissionSet newSet = SetupPlayerPermissionsEvent.EVENT.invoker().onSetupPlayerPermissions(entity, set);
+        if (newSet != set) {
+            cir.setReturnValue(newSet);
+        }
     }
 }

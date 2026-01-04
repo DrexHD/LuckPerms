@@ -27,19 +27,19 @@ package me.lucko.luckperms.fabric.event;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.network.ClientConnection;
+import net.minecraft.network.Connection;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 public interface PreOnPlayerConnectCallback {
-    Event<PreOnPlayerConnectCallback> EVENT = EventFactory.createArrayBacked(PreOnPlayerConnectCallback.class, listeners -> (player, handler, server) -> {
+    Event<PreOnPlayerConnectCallback> EVENT = EventFactory.createArrayBacked(PreOnPlayerConnectCallback.class, listeners -> (player, connection, server) -> {
         for (PreOnPlayerConnectCallback listener : listeners) {
-            if (!listener.onPreOnPlayerConnect(player, handler, server)) {
+            if (!listener.onPreOnPlayerConnect(player, connection, server)) {
                 return false;
             }
         }
         return true;
     });
 
-    boolean onPreOnPlayerConnect(ServerPlayerEntity player, ClientConnection clientConnection, MinecraftServer server);
+    boolean onPreOnPlayerConnect(ServerPlayer player, Connection connection, MinecraftServer server);
 }

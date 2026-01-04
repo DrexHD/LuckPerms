@@ -29,22 +29,26 @@ import com.mojang.authlib.GameProfile;
 import me.lucko.luckperms.common.config.ConfigKeys;
 import me.lucko.luckperms.common.locale.Message;
 import me.lucko.luckperms.common.locale.TranslationManager;
+import me.lucko.luckperms.common.minecraft.MinecraftSenderFactory;
 import me.lucko.luckperms.common.model.User;
 import me.lucko.luckperms.common.plugin.util.AbstractConnectionListener;
 import me.lucko.luckperms.fabric.FabricSenderFactory;
 import me.lucko.luckperms.fabric.LPFabricPlugin;
 import me.lucko.luckperms.fabric.event.PreOnPlayerConnectCallback;
 import me.lucko.luckperms.fabric.event.ServerConfigurationTickCallback;
-import me.lucko.luckperms.fabric.mixin.ServerLoginNetworkHandlerAccessor;
+import me.lucko.luckperms.fabric.mixin.ServerLoginPacketListenerImplAccessor;
 import me.lucko.luckperms.fabric.model.MixinUser;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerLoginConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerLoginNetworking.LoginSynchronizer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.kyori.adventure.text.Component;
-import net.minecraft.network.ClientConnection;
+import net.minecraft.network.Connection;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.*;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -64,11 +68,11 @@ public class FabricConnectionListener extends AbstractConnectionListener {
         ServerConfigurationTickCallback.EVENT.register(this::onConfigurationTick);
     }
 
-    private void onPreLogin(ServerLoginNetworkHandler netHandler, MinecraftServer server, PacketSender packetSender, LoginSynchronizer sync) {
+    private void onPreLogin(ServerLoginPacketListenerImpl netHandler, MinecraftServer server, PacketSender packetSender, LoginSynchronizer sync) {
         /* Called when the player first attempts a connection with the server. */
 
         // Get their profile from the net handler - it should have been initialised by now.
-        GameProfile profile = ((ServerLoginNetworkHandlerAccessor) netHandler).getGameProfile();
+        GameProfile profile = ((ServerLoginPacketListenerImplAccessor) netHandler).getAuthenticatedProfile();
         UUID uniqueId = profile.id();
         String username = profile.name();
 
@@ -80,7 +84,7 @@ public class FabricConnectionListener extends AbstractConnectionListener {
         sync.waitFor(CompletableFuture.runAsync(() -> onPreLoginAsync(netHandler, uniqueId, username), this.plugin.getBootstrap().getScheduler().async()));
     }
 
-    private void onPreLoginAsync(ServerLoginNetworkHandler netHandler, UUID uniqueId, String username) {
+    private void onPreLoginAsync(ServerLoginPacketListenerImpl netHandler, UUID uniqueId, String username) {
         if (this.plugin.getConfiguration().get(ConfigKeys.DEBUG_LOGINS)) {
             this.plugin.getLogger().info("Processing pre-login (async phase) for " + uniqueId + " - " + username);
         }
@@ -108,19 +112,19 @@ public class FabricConnectionListener extends AbstractConnectionListener {
         }
     }
 
-    private boolean onLogin(ServerPlayerEntity player, ClientConnection netHandler, MinecraftServer server) {
+    private boolean onLogin(ServerPlayer player, Connection netHandler, MinecraftServer server) {
         if (this.plugin.getConfiguration().get(ConfigKeys.DEBUG_LOGINS)) {
-            this.plugin.getLogger().info("Processing login for " + player.getUuid() + " - " + player.getGameProfile().name());
+            this.plugin.getLogger().info("Processing login for " + player.getUUID() + " - " + player.getGameProfile().name());
         }
 
-        final User user = this.plugin.getUserManager().getIfLoaded(player.getUuid());
+        final User user = this.plugin.getUserManager().getIfLoaded(player.getUUID());
 
         /* User instance is null for whatever reason. Could be that it was unloaded between asyncpre and now. */
         if (user == null) {
-            this.plugin.getLogger().warn("User " + player.getUuid() + " - " + player.getGameProfile().id() +
+            this.plugin.getLogger().warn("User " + player.getUUID() + " - " + player.getGameProfile().id() +
                     " doesn't currently have data pre-loaded - denying login.");
             Component reason = TranslationManager.render(Message.LOADING_STATE_ERROR.build());
-            netHandler.disconnect(FabricSenderFactory.toNativeText(reason));
+            netHandler.disconnect(MinecraftSenderFactory.toNativeText(reason));
             return false;
         }
 
@@ -131,7 +135,7 @@ public class FabricConnectionListener extends AbstractConnectionListener {
         return true;
     }
 
-    private void onConfigurationTick(GameProfile gameProfile, ServerConfigurationNetworkHandler serverConfigurationNetworkHandler, MinecraftServer server) {
+    private void onConfigurationTick(GameProfile gameProfile, ServerConfigurationPacketListenerImpl netHandler, MinecraftServer server) {
         /* This forces the user data to be kept as long as user is connected.
            This should fix cases of players disconnecting whey they download big resource pack
            on a slow connection or some other mod delays it for any reason it needs to.
@@ -139,9 +143,9 @@ public class FabricConnectionListener extends AbstractConnectionListener {
         this.plugin.getUserManager().getHouseKeeper().registerUsage(gameProfile.id());
     }
 
-    private void onDisconnect(ServerPlayNetworkHandler netHandler, MinecraftServer server) {
+    private void onDisconnect(ServerGamePacketListenerImpl netHandler, MinecraftServer server) {
         if (!server.isStopped()) {
-            handleDisconnect(netHandler.player.getUuid());
+            handleDisconnect(netHandler.player.getUUID());
         }
     }
 
