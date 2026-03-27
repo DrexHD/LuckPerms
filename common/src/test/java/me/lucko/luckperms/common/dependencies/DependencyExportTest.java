@@ -23,19 +23,26 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.common.calculator.processor;
+package me.lucko.luckperms.common.dependencies;
 
-import net.luckperms.api.node.Node;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.Base64;
 
-public abstract class AbstractSourceBasedProcessor extends AbstractPermissionProcessor implements PermissionProcessor {
-    protected Map<String, Node> sourceMap = Collections.emptyMap();
+public class DependencyExportTest {
 
-    @Override
-    public void setSource(Map<String, Node> sourceMap) {
-        this.sourceMap = sourceMap;
+    @Test
+    @Disabled
+    public void print() {
+        for (Dependency dependency : Dependency.values()) {
+            System.out.printf(
+                    "[name: \"%s\", url:  \"%s\", sha256: \"%s\"],\n",
+                    dependency.getFileName(null) + "injar",
+                    "https://repo1.maven.org/maven2/" + dependency.getMavenRepoPath(),
+                    Base64.getEncoder().encodeToString(dependency.getChecksum())
+            );
+        }
     }
 
 }

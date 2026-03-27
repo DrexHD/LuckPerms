@@ -335,6 +335,16 @@ public final class ConfigKeys {
     public static final ConfigKey<Boolean> APPLY_SPONGE_DEFAULT_SUBJECTS = notReloadable(booleanKey("apply-sponge-default-subjects", true));
 
     /**
+     * If Hytale virtual groups should be applied
+     */
+    public static final ConfigKey<Boolean> APPLY_HYTALE_VIRTUAL_GROUPS = notReloadable(booleanKey("apply-hytale-virtual-groups", true));
+
+    /**
+     * If LuckPerms should delegate permission checks to the Hytale permissions provider for users/groups not managed by LuckPerms
+     */
+    public static final ConfigKey<Boolean> DELEGATE_TO_HYTALE_PERMISSIONS_PROVIDER = notReloadable(booleanKey("delegate-to-hytale-permissions-provider", true));
+
+    /**
      * The algorithm LuckPerms should use when traversing the "inheritance tree"
      */
     public static final ConfigKey<TraversalAlgorithm> INHERITANCE_TRAVERSAL_ALGORITHM = key(c -> {
@@ -716,6 +726,11 @@ public final class ConfigKeys {
     public static final ConfigKey<String> NATS_PASSWORD = notReloadable(stringKey("nats.password", ""));
 
     /**
+     * The token in use by the nats server, or an empty string if there is no token
+     */
+    public static final ConfigKey<String> NATS_TOKEN = notReloadable(stringKey("nats.token", ""));
+
+    /**
      * If the nats connection should use SSL
      */
     public static final ConfigKey<Boolean> NATS_SSL = notReloadable(booleanKey("nats.ssl", false));
@@ -746,6 +761,11 @@ public final class ConfigKeys {
     public static final ConfigKey<String> RABBITMQ_PASSWORD = notReloadable(stringKey("rabbitmq.password", "guest"));
 
     /**
+     * If the chat formatter is enabled - deprecated
+     */
+    public static final ConfigKey<Boolean> CHAT_FORMATTER_ENABLED = booleanKey("chat-formatter.enabled", false);
+
+    /**
      * If the editor key should be generated lazily (only when needed)
      */
     public static final ConfigKey<Boolean> EDITOR_LAZILY_GENERATE_KEY = booleanKey("editor-lazily-generate-key", false);
@@ -753,17 +773,12 @@ public final class ConfigKeys {
     /**
      * The URL of the bytebin instance used to upload data
      */
-    public static final ConfigKey<String> BYTEBIN_URL = stringKey("bytebin-url", "https://usercontent.luckperms.net/");
+    public static final ConfigKey<String> BYTEBIN_URL = notReloadable(stringKey("bytebin-url", "https://usercontent.luckperms.net/"));
 
     /**
-     * The host of the bytesocks instance used to communicate with
+     * The URL of the bytesocks instance used to communicate with
      */
-    public static final ConfigKey<String> BYTESOCKS_HOST = stringKey("bytesocks-host", "usersockets.luckperms.net");
-
-    /**
-     * If TLS (https/wss) should be used when connecting to bytesocks
-     */
-    public static final ConfigKey<Boolean> BYTESOCKS_USE_TLS = booleanKey("bytesocks-use-tls", true);
+    public static final ConfigKey<String> BYTESOCKS_URL = notReloadable(stringKey("bytesocks-url", "https://usersockets.luckperms.net/"));
 
     /**
      * The URL of the web editor
