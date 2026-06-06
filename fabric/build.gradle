@@ -1,5 +1,3 @@
-import net.fabricmc.loom.task.RemapJarTask
-
 plugins {
     alias(libs.plugins.shadow)
     alias(libs.plugins.publish)
@@ -16,6 +14,12 @@ tasks.withType(JavaCompile).configureEach {
 
 repositories {
     maven { url 'https://maven.fabricmc.net/' }
+    maven {
+        url 'https://maven.nucleoid.xyz/'
+        content {
+            includeGroup('eu.pb4')
+        }
+    }
 }
 
 configurations {
@@ -36,17 +40,20 @@ dependencies {
             'fabric-command-api-v2',
             'fabric-lifecycle-events-v1',
             'fabric-networking-api-v1',
-            'fabric-entity-events-v1'
+            'fabric-entity-events-v1',
+            'fabric-permission-api-v1',
     ]
 
     apiModules.forEach {
-        implementation(fabricApi.module(it, '0.144.0+26.1'))
+        implementation(fabricApi.module(it, '0.149.0+26.1.2'))
     }
 
     jarInJar 'me.lucko:fabric-permissions-api:0.7.0'
+    implementation 'eu.pb4:placeholder-api:3.0.0+26.1'
 
     shade project(':common')
     shade project(':common:minecraft')
+    shade project(':common:placeholders')
 }
 
 loom.nestJars(tasks.named("shadowJar"), configurations.jarInJar)

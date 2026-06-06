@@ -23,22 +23,34 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.standalone;
+package me.lucko.luckperms.common.placeholders;
 
-import me.lucko.luckperms.common.plugin.scheduler.AbstractJavaScheduler;
-import me.lucko.luckperms.common.plugin.scheduler.SchedulerAdapter;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.model.user.User;
+import net.luckperms.api.query.QueryOptions;
+import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.Executor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
-public class StandaloneSchedulerAdapter extends AbstractJavaScheduler implements SchedulerAdapter {
+public class PlaceholderTest {
 
-    public StandaloneSchedulerAdapter(LPStandaloneBootstrap bootstrap) {
-        super(bootstrap);
+    private final PlaceholderContext ctx = new PlaceholderContext(mock(LuckPerms.class), mock(User.class), mock(QueryOptions.class));
+
+    @Test
+    public void testBasic() {
+        Placeholder.Basic placeholder = Placeholder.basic("test", ctx -> "hello");
+
+        assertEquals("test", placeholder.id());
+        assertEquals("hello", placeholder.resolve(this.ctx));
     }
 
-    @Override
-    public Executor sync() {
-        return this.async();
+    @Test
+    public void testUsingArgument() {
+        Placeholder.UsingArgument placeholder = Placeholder.usingArgument("test", ctx -> "hello " + ctx.argument());
+
+        assertEquals("test", placeholder.id());
+        assertEquals("hello world", placeholder.resolve(this.ctx.withArgument("world")));
     }
 
 }
