@@ -25,58 +25,29 @@
 
 package me.lucko.luckperms.common.minecraft.listeners;
 
-import me.lucko.luckperms.common.api.implementation.ApiUser;
-import me.lucko.luckperms.common.event.LuckPermsEventListener;
+import me.lucko.luckperms.common.event.listeners.AbstractAutoOpListener;
 import me.lucko.luckperms.common.minecraft.MinecraftLuckPermsPlugin;
-import me.lucko.luckperms.common.model.User;
-import net.luckperms.api.event.EventBus;
-import net.luckperms.api.event.context.ContextUpdateEvent;
-import net.luckperms.api.event.user.UserDataRecalculateEvent;
-import net.luckperms.api.query.QueryOptions;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.util.Map;
+import java.util.UUID;
 
-public class MinecraftAutoOpListener implements LuckPermsEventListener {
-    private static final String NODE = "luckperms.autoop";
-
-    private final MinecraftLuckPermsPlugin<?, ?> plugin;
-
+public class MinecraftAutoOpListener extends AbstractAutoOpListener<MinecraftLuckPermsPlugin<?, ?>, ServerPlayer> {
     public MinecraftAutoOpListener(MinecraftLuckPermsPlugin<?, ?> plugin) {
-        this.plugin = plugin;
+        super(plugin, plugin.getContextManager(), ServerPlayer.class);
     }
 
     @Override
-    public void bind(EventBus bus) {
-        bus.subscribe(ContextUpdateEvent.class, this::onContextUpdate);
-        bus.subscribe(UserDataRecalculateEvent.class, this::onUserDataRecalculate);
+    protected boolean isServerAvailable() {
+        return this.plugin.getBootstrap().getServer().isPresent();
     }
 
-    private void onContextUpdate(ContextUpdateEvent event) {
-        event.getSubject(ServerPlayer.class).ifPresent(player -> refreshAutoOp(player, true));
+    @Override
+    protected UUID getUniqueId(ServerPlayer player) {
+        return player.getUUID();
     }
 
-    private void onUserDataRecalculate(UserDataRecalculateEvent event) {
-        User user = ApiUser.cast(event.getUser());
-        this.plugin.getBootstrap().getPlayer(user.getUniqueId()).ifPresent(player -> refreshAutoOp(player, false));
-    }
-
-    private void refreshAutoOp(ServerPlayer player, boolean callerIsSync) {
-        if (!callerIsSync && !this.plugin.getBootstrap().getServer().isPresent()) {
-            return;
-        }
-
-        User user = this.plugin.getUserManager().getIfLoaded(player.getUUID());
-
-        boolean value;
-        if (user != null) {
-            QueryOptions queryOptions = this.plugin.getContextManager().getQueryOptions(player);
-            Map<String, Boolean> permData = user.getCachedData().getPermissionData(queryOptions).getPermissionMap();
-            value = permData.getOrDefault(NODE, false);
-        } else {
-            value = false;
-        }
-
+    @Override
+    protected void setOp(ServerPlayer player, boolean value, boolean callerIsSync) {
         if (callerIsSync) {
             setOp(player, value);
         } else {
